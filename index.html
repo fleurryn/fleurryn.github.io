@@ -1,197 +1,116 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Uma Rooma Tracker</title>
-  <style>
-    table, th, td { border: 1px solid black; border-collapse: collapse; padding: 4px; }
-    button { margin: 2px; }
-    .positive { color: green; font-weight: bold; }
-    .negative { color: red; font-weight: bold; }
-    .neutral { color: grey; }
-    body { font-family: arial; }
-  </style>
+<meta charset="UTF-8">
+<title>Uma Rooma Fan Tracker</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #fafafa;
+    margin: 0;
+    padding: 0;
+  }
+  header {
+    padding: 1rem;
+    text-align: center;
+    background: #333;
+    color: white;
+  }
+  main {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 800px;
+    margin: auto;
+    padding: 1rem;
+  }
+  .upload-box, .table-box {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  input[type=file], button {
+    padding: 0.5rem;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  table th, table td {
+    padding: 0.5rem;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+  }
+  table th {
+    background: #f4f4f4;
+  }
+</style>
 </head>
 <body>
-  <h1>Upload Player Data</h1>
-  <input type="file" id="fileInput">
-  <button onclick="uploadFile()">Upload</button>
+<header>
+  <h1>Uma Rooma Fan Tracker</h1>
+</header>
+<main>
+  <div class="upload-box">
+    <h3>Upload Daily JSON File</h3>
+    <input type="file" id="jsonFile">
+    <button onclick="uploadData()">Upload</button>
+  </div>
 
-  <h2>Latest Player Data</h2>
-  <button onclick="fetchLatest()">Refresh Table</button>
-  <table id="dataTable">
-    <thead>
-      <tr>
-        <th>Username</th>
-        <th>FanCount</th>
-        <th>ScanDate</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <h2>Fan Count Changes</h2>
-  <select id="period">
-    <option value="day">Daily</option>
-    <option value="week">Weekly</option>
-    <option value="month">Monthly</option>
-  </select>
-  <input type="date" id="asOf">
-  <button onclick="fetchStats()">Get Stats</button>
-
-  <table id="statsTable">
-    <thead>
-      <tr>
-        <th>Username</th>
-        <th>Change</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="table-box">
+    <h3>Player Data</h3>
+    <table id="playerTable">
+      <thead>
+        <tr><th>Username</th><th>FanCount</th><th>ScanDate</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</main>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxj94OWE956dwd7uz0uwQoB4DOwer988-B4fbuy41hVcUsfpVKvNR8z2SenqT4A-v1s/exec"; // Replace with your Apps Script URL
+const API_URL = "https://script.google.com/macros/s/AKfycbxBPYYrz7zqQvWzuA5fbdaR6Eu2qODoXE8gZilQdtnT2tnj9dKj8N_r_For441OkPZt3g/exec";
 
-function uploadFile() {
-  const file = document.getElementById('fileInput').files[0];
-  if (!file) return alert("No file selected");
+// Fetch data on load
+document.addEventListener("DOMContentLoaded", loadData);
 
+function loadData() {
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.querySelector("#playerTable tbody");
+      tbody.innerHTML = "";
+      data.forEach(row => {
+        let tr = document.createElement("tr");
+        tr.innerHTML = `<td>${row.Username}</td><td>${row.FanCount}</td><td>${row.ScanDate}</td>`;
+        tbody.appendChild(tr);
+      });
+    });
+}
+
+function uploadData() {
+  const fileInput = document.getElementById("jsonFile");
+  if (!fileInput.files.length) {
+    alert("Please select a JSON file first.");
+    return;
+  }
   const reader = new FileReader();
   reader.onload = function(e) {
-    let text = e.target.result;
-    let records;
-    if (file.name.endsWith('.json')) {
-      records = JSON.parse(text);
-    } else if (file.name.endsWith('.tsv')) {
-      let lines = text.trim().split("\n");
-      let headers = lines[0].split("\t");
-      records = lines.slice(1).map(line => {
-        let values = line.split("\t");
-        let obj = {};
-        headers.forEach((h, i) => obj[h] = values[i]);
-        return obj;
-      });
-    } else {
-      return alert("Invalid file format");
-    }
-
+    const jsonData = JSON.parse(e.target.result);
     fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'upload', records }),
-    }).then(res => res.json())
-      .then(() => {
-        alert("Upload complete");
-        fetchLatest();
-      });
-  }
-  reader.readAsText(file);
-}
-
-// Fetch only the latest date's data
-function fetchLatest() {
-  fetch(`${API_URL}?action=latest`)
+      method: "POST",
+      body: JSON.stringify(jsonData)
+    })
     .then(res => res.json())
-    .then(data => {
-      const tbody = document.querySelector("#dataTable tbody");
-      tbody.innerHTML = "";
-      data.forEach(row => {
-        const tr = document.createElement("tr");
-
-        const tdUser = document.createElement("td");
-        tdUser.contentEditable = true;
-        tdUser.textContent = row.Username;
-        tr.appendChild(tdUser);
-
-        const tdFan = document.createElement("td");
-        tdFan.contentEditable = true;
-        tdFan.textContent = row.FanCount;
-        tr.appendChild(tdFan);
-
-        const tdDate = document.createElement("td");
-        tdDate.contentEditable = true;
-        tdDate.textContent = row.ScanDate;
-        tr.appendChild(tdDate);
-
-        const tdActions = document.createElement("td");
-        const btnSave = document.createElement("button");
-        btnSave.textContent = "Save";
-        btnSave.onclick = () => updateRow(row.Username, row.ScanDate, tdUser.textContent, tdFan.textContent, tdDate.textContent);
-        
-        const btnDelete = document.createElement("button");
-        btnDelete.textContent = "Delete";
-        btnDelete.onclick = () => deleteRow(row.Username, row.ScanDate);
-
-        tdActions.appendChild(btnSave);
-        tdActions.appendChild(btnDelete);
-        tr.appendChild(tdActions);
-
-        tbody.appendChild(tr);
-      });
-    });
+    .then(resp => {
+      alert("Data uploaded successfully!");
+      loadData();
+    })
+    .catch(err => alert("Error uploading data: " + err));
+  };
+  reader.readAsText(fileInput.files[0]);
 }
-
-function updateRow(oldUsername, oldScanDate, newUsername, newFanCount, newScanDate) {
-  fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify({
-      action: 'update',
-      OldUsername: oldUsername,
-      OldScanDate: oldScanDate,
-      Username: newUsername,
-      FanCount: newFanCount,
-      ScanDate: newScanDate
-    }),
-  }).then(res => res.json())
-    .then(() => {
-      alert("Row updated");
-      fetchLatest();
-    });
-}
-
-function deleteRow(username, scanDate) {
-  if (!confirm(`Delete ${username} on ${scanDate}?`)) return;
-  fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'delete', Username: username, ScanDate: scanDate }),
-  }).then(res => res.json())
-    .then(() => {
-      alert("Row deleted");
-      fetchLatest();
-    });
-}
-
-// Better stats table
-function fetchStats() {
-  const period = document.getElementById('period').value;
-  const asOf = document.getElementById('asOf').value;
-  fetch(`${API_URL}?action=stats&period=${period}&asOf=${asOf}`)
-    .then(res => res.json())
-    .then(data => {
-      const tbody = document.querySelector("#statsTable tbody");
-      tbody.innerHTML = "";
-      data.forEach(row => {
-        const tr = document.createElement("tr");
-
-        const tdUser = document.createElement("td");
-        tdUser.textContent = row.username;
-        tr.appendChild(tdUser);
-
-        const tdChange = document.createElement("td");
-        tdChange.textContent = row.change;
-        if (row.change > 0) tdChange.classList.add("positive");
-        else if (row.change < 0) tdChange.classList.add("negative");
-        else tdChange.classList.add("neutral");
-        tr.appendChild(tdChange);
-
-        tbody.appendChild(tr);
-      });
-    });
-}
-
-window.onload = fetchLatest;
 </script>
 </body>
 </html>
-
-
-
