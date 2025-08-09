@@ -72,7 +72,7 @@
     <div id="recordsContainer"></div>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzmBR8a3ieGBOoiOPPqQM9ZtxlTtqwk5AYBKrpFk1tyyrkGWaQW7BjSZTEH3BOcSEFUmw/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxbRS9yJUqlBjgcUk1Q0fJMK0y2oWPt1sv5qDuOAwWP8X9OFifO3-HuRjbu2HEWHVoK/exec';
         const uploadBtn = document.getElementById('uploadBtn');
         const refreshBtn = document.getElementById('refreshBtn');
         const jsonFile = document.getElementById('jsonFile');
@@ -104,7 +104,11 @@
                         loadAll();
                         loadStats();
                     } else showMessage('Upload error: ' + (j.message || JSON.stringify(j)), true);
-                } catch (err) { showMessage('Invalid JSON: ' + err.message, true); }
+                } catch (err) {
+                    console.error(err);
+                    showMessage('Error: ' + err.message, true);
+                }
+
             };
             reader.readAsText(f);
         };
