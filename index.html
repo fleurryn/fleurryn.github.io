@@ -1,162 +1,613 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>Uma Rooma Fan Tracker</title>
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        background: #fafafa;
-        color: #333;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    header {
-        background: #222;
-        color: #fff;
-        padding: 1rem;
-        width: 100%;
-        text-align: center;
-        font-size: 1.5rem;
-        font-weight: bold;
-    }
-    main {
-        max-width: 1000px;
-        width: 100%;
-        padding: 1rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-    .controls {
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
-    }
-    input[type="file"], button {
-        padding: 0.5rem;
-        font-size: 1rem;
-        cursor: pointer;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        background: #fff;
-    }
-    th, td {
-        border: 1px solid #ccc;
-        padding: 0.5rem;
-        text-align: center;
-    }
-    th {
-        background: #f4f4f4;
-    }
-    tr:hover {
-        background: #f9f9f9;
-    }
-</style>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Uma Rooma Fan Tracker</title>
+    <style>
+        :root {
+            --bg: #f7f7f8;
+            --card: #fff;
+            --accent: #0f62fe;
+            --muted: #666;
+            --radius: 10px;
+            --shadow: 0 6px 18px rgba(12, 20, 60, 0.06);
+            font-family: Inter, system-ui, Arial;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            background: var(--bg);
+            color: #111;
+        }
+
+        header {
+            background: linear-gradient(90deg, #0f62fe, #4f7cff);
+            color: #fff;
+            padding: 18px 16px;
+        }
+
+        header .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.15rem
+        }
+
+        .wrap {
+            max-width: 1100px;
+            margin: 20px auto;
+            padding: 0 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .grid {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 12px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .upload-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        input[type=file] {
+            padding: 6px
+        }
+
+        button {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer
+        }
+
+        button.ghost {
+            background: transparent;
+            border: 1px solid rgba(15, 98, 254, 0.12);
+            color: var(--accent)
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            margin-top: 12px;
+        }
+
+        thead th {
+            background: #fbfbff;
+            padding: 8px;
+            color: var(--muted);
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        .small {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 6px
+        }
+
+        input[type=text],
+        input[type=number],
+        input[type=date] {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #e6e6e9
+        }
+
+        @media (max-width:820px) {
+            .grid {
+                flex-direction: column
+            }
+
+            header .container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px
+            }
+        }
+    </style>
 </head>
+
 <body>
+    <header>
+        <div class="container">
+            <h1>Uma Rooma Fan Tracker</h1>
+            <div class="small">Upload daily OCR JSON · Store in Google Sheets · Track changes</div>
+        </div>
+    </header>
 
-<header>Uma Rooma Fan Tracker</header>
+    <div class="wrap">
+        <div class="grid">
+            <div class="card">
+                <strong>Upload OCR JSON (daily)</strong>
+                <div class="small">File should be the OCR JSON array with Fields.Username and Fields["Fan Count"]</div>
+                <div style="margin-top:10px" class="upload-row">
+                    <input id="jsonFile" type="file" accept=".json,application/json">
+                    <button id="uploadBtn">Upload</button>
+                    <button id="refreshBtn" class="ghost">Refresh</button>
+                </div>
 
-<main>
-    <div class="controls">
-        <input type="file" id="jsonUpload" accept="application/json">
-        <button onclick="fetchData()">Refresh Data</button>
+                <hr style="margin:12px 0;border:none;height:1px;background:#f1f4ff">
+
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input id="manualName" placeholder="Username" type="text" style="flex:1">
+                    <input id="manualFan" placeholder="FanCount" type="number" style="width:110px">
+                    <input id="manualDate" type="date" style="width:150px">
+                    <button id="addBtn">Add</button>
+                </div>
+                <div class="small" style="margin-top:8px">Manual add will insert a single record to the sheet.</div>
+            </div>
+
+            <div class="card" style="width:320px;">
+                <strong>View & Compute</strong>
+                <div class="small">Choose period and (optionally) date range, then Compute</div>
+                <div style="margin-top:8px;display:flex;gap:8px;">
+                    <div style="display:flex;gap:6px;flex-direction:column;">
+                        <button class="tab active" data-period="all">All</button>
+                        <button class="tab" data-period="daily">Daily</button>
+                        <button class="tab" data-period="weekly">Weekly</button>
+                        <button class="tab" data-period="monthly">Monthly</button>
+                    </div>
+                    <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+                        <div style="display:flex;gap:6px">
+                            <input id="rangeStart" type="date">
+                            <input id="rangeEnd" type="date">
+                        </div>
+                        <div style="display:flex;gap:6px">
+                            <button id="computeBtn">Compute Changes</button>
+                            <button id="exportBtn" class="ghost">Export CSV</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top:12px">
+                    <div class="small">Top 5 changes</div>
+                    <div id="topList" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <strong>Player Records</strong>
+                <div class="small">Total: <span id="totalCount">0</span></div>
+            </div>
+
+            <div style="margin-top:12px;overflow:auto;max-height:520px;">
+                <table id="playerTable">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Fans</th>
+                            <th>ScanDate</th>
+                            <th>ΔDaily</th>
+                            <th>ΔWeekly</th>
+                            <th>ΔMonthly</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <strong>Change Details</strong>
+            <div class="small">Results for selected period</div>
+            <div id="changesArea"
+                style="margin-top:8px;display:flex;flex-direction:column;gap:6px;max-height:360px;overflow:auto"></div>
+        </div>
     </div>
-    
-    <table id="dataTable">
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>Fan Count</th>
-                <th>Scan Date</th>
-                <th>Daily Δ</th>
-                <th>Weekly Δ</th>
-                <th>Monthly Δ</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-</main>
 
-<script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwPfwQJGrCMar5q8elqvE07_kRrfhbjTK8yuTVHfo97GdFItPFq1YU_sN3C0PXxh5tDQQ/exec"; // from Google Apps Script
+    <script>
+        /* ---------- CONFIG: paste your Apps Script Web App URL here ---------- */
+        const API_URL = "https://script.google.com/macros/s/AKfycbwxQTyvi5GBAzbN819_FPlab0Jp-bEW_MexY5PFL5-eOhbr5Kq5E166iPJYzucLf00qEw/exec"; // << replace me
 
-document.getElementById("jsonUpload").addEventListener("change", handleFileUpload);
+        /* ---------- Utils ---------- */
+        function notify(s) { alert(s); }
+        function isoDateOnly(d) {
+            if (!d) return "";
+            const dt = new Date(d);
+            if (isNaN(dt)) return String(d);
+            return dt.toISOString().slice(0, 10);
+        }
+        function parseDateFlexible(s) {
+            if (!s) return null;
+            if (s instanceof Date) return s;
+            let dt = new Date(s);
+            if (!isNaN(dt)) return dt;
+            // fallback dd/mm/yyyy
+            const parts = String(s).split(/[\/\-\s\.]/);
+            if (parts.length === 3) {
+                if (parts[0].length === 4) return new Date(parts[0] + "-" + parts[1] + "-" + parts[2]);
+                const dd = parseInt(parts[0], 10), mm = parseInt(parts[1], 10), yy = parseInt(parts[2], 10);
+                return new Date(yy < 1000 ? (yy + 2000) : yy, mm - 1, dd);
+            }
+            return new Date(s);
+        }
+        function safeNum(x) { return (typeof x === "number") ? Math.round(x) : parseInt(String(x || "0").replace(/,/g, "").replace(/\s/g, ""), 10) || 0; }
+        function formatNum(n) { return (n === null || n === undefined) ? "-" : n.toLocaleString(); }
 
-function handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+        /* ---------- State ---------- */
+        let records = []; // objects from sheet: {ID, Username, FanCount(number), ScanDate}
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const jsonData = JSON.parse(e.target.result);
-        // Send JSON to Google Sheets
-        fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "upload", data: jsonData })
-        })
-        .then(res => res.json())
-        .then(data => {
-            alert("Data uploaded successfully!");
-            fetchData();
-        })
-        .catch(err => console.error(err));
-    };
-    reader.readAsText(file);
-}
+        /* ---------- Fetch / Render ---------- */
+        async function fetchAll() {
+            try {
+                const res = await fetch(API_URL + "?action=getAll");
+                if (!res.ok) throw new Error("fetch failed");
+                const data = await res.json();
+                // normalize types
+                records = data.map(r => ({
+                    ID: r.ID,
+                    Username: String(r.Username || "").trim(),
+                    FanCount: safeNum(r.FanCount),
+                    ScanDate: String(r.ScanDate)
+                }));
+                renderTable();
+            } catch (err) {
+                console.error(err);
+                notify("Failed to fetch data. Ensure your API_URL and web app deployment are correct.");
+            }
+        }
 
-function fetchData() {
-    fetch(SCRIPT_URL + "?action=read")
-    .then(res => res.json())
-    .then(data => {
-        displayData(data);
-    });
-}
+        function renderTable() {
+            const tbody = document.querySelector("#playerTable tbody");
+            tbody.innerHTML = "";
+            records.sort((a, b) => new Date(b.ScanDate) - new Date(a.ScanDate));
+            document.getElementById("totalCount").textContent = records.length;
+            // compute change indices once for speed
+            const grouped = groupByUser(records);
+            records.forEach(rec => {
+                const username = rec.Username;
+                const last = rec.FanCount;
+                const perUser = grouped[username] || [];
+                // find prev points
+                const dailyPrev = findClosestBefore(perUser, rec.ScanDate, 1);
+                const weeklyPrev = findClosestBefore(perUser, rec.ScanDate, 7);
+                const monthlyPrev = findClosestBefore(perUser, rec.ScanDate, 30);
+                const daily = dailyPrev ? last - dailyPrev.FanCount : null;
+                const weekly = weeklyPrev ? last - weeklyPrev.FanCount : null;
+                const monthly = monthlyPrev ? last - monthlyPrev.FanCount : null;
 
-function displayData(data) {
-    const tbody = document.querySelector("#dataTable tbody");
-    tbody.innerHTML = "";
+                const tr = document.createElement("tr");
+                tr.dataset.id = rec.ID;
+                tr.innerHTML = `
+      <td>${escapeHtml(username)}</td>
+      <td>${formatNum(last)}</td>
+      <td>${isoDateOnly(rec.ScanDate)}</td>
+      <td style="color:${daily > 0 ? 'green' : (daily < 0 ? 'red' : '#666')}">${daily === null ? '-' : (daily > 0 ? '+' + daily : daily)}</td>
+      <td style="color:${weekly > 0 ? 'green' : (weekly < 0 ? 'red' : '#666')}">${weekly === null ? '-' : (weekly > 0 ? '+' + weekly : weekly)}</td>
+      <td style="color:${monthly > 0 ? 'green' : (monthly < 0 ? 'red' : '#666')}">${monthly === null ? '-' : (monthly > 0 ? '+' + monthly : monthly)}</td>
+      <td>
+        <div class="row-actions">
+          <button class="editBtn">Edit</button>
+          <button class="delBtn">Delete</button>
+        </div>
+      </td>
+    `;
+                tbody.appendChild(tr);
+            });
+            attachRowListeners();
+        }
 
-    data.forEach(row => {
-        const tr = document.createElement("tr");
+        /* ---------- Helpers ---------- */
+        function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
-        tr.innerHTML = `
-            <td>${row.Username}</td>
-            <td>${row.FanCount}</td>
-            <td>${row.ScanDate}</td>
-            <td>${row.DailyChange ?? "-"}</td>
-            <td>${row.WeeklyChange ?? "-"}</td>
-            <td>${row.MonthlyChange ?? "-"}</td>
-            <td>
-                <button onclick="deleteRow('${row.Username}', '${row.ScanDate}')">Delete</button>
-            </td>
-        `;
+        function groupByUser(data) {
+            const map = {};
+            data.forEach(r => {
+                if (!map[r.Username]) map[r.Username] = [];
+                map[r.Username].push({ FanCount: safeNum(r.FanCount), ScanDate: r.ScanDate });
+            });
+            Object.keys(map).forEach(k => map[k].sort((a, b) => new Date(a.ScanDate) - new Date(b.ScanDate)));
+            return map;
+        }
 
-        tbody.appendChild(tr);
-    });
-}
+        // find closest record before given date with a minimum days gap roughly equal to dayGap
+        function findClosestBefore(list, isoDateStr, dayGap) {
+            if (!list || list.length === 0) return null;
+            const target = new Date(isoDateStr);
+            let best = null;
+            let bestDiff = Infinity;
+            for (let i = 0; i < list.length; i++) {
+                const d = new Date(list[i].ScanDate);
+                if (d >= target) continue;
+                const days = Math.round((target - d) / (1000 * 60 * 60 * 24));
+                // accept if day difference is at least near the dayGap (we allow +/- a few days)
+                const diffFromTargetGap = Math.abs(days - dayGap);
+                // prefer exact nearest dayGap; fallback to most recent before target
+                if (diffFromTargetGap <= 3) {
+                    if (diffFromTargetGap < bestDiff) { best = list[i]; bestDiff = diffFromTargetGap; }
+                } else {
+                    // keep last before target if nothing closer to gap found
+                    if (!best && days >= 1) { best = list[i]; bestDiff = diffFromTargetGap; }
+                }
+            }
+            return best;
+        }
 
-function deleteRow(username, date) {
-    if (!confirm(`Delete entry for ${username} on ${date}?`)) return;
-    fetch(SCRIPT_URL, {
-        method: "POST",
-        body: JSON.stringify({ action: "delete", username, date })
-    })
-    .then(res => res.json())
-    .then(() => {
-        fetchData();
-    });
-}
+        /* ---------- Row actions (Edit/Delete) ---------- */
+        function attachRowListeners() {
+            document.querySelectorAll(".editBtn").forEach(btn => {
+                btn.onclick = (e) => {
+                    const tr = e.target.closest("tr");
+                    makeRowEditable(tr);
+                };
+            });
+            document.querySelectorAll(".delBtn").forEach(btn => {
+                btn.onclick = async (e) => {
+                    const tr = e.target.closest("tr");
+                    const id = tr.dataset.id;
+                    if (!confirm("Delete this record?")) return;
+                    await deleteRecord(id);
+                };
+            });
+        }
 
-fetchData();
-</script>
+        function makeRowEditable(tr) {
+            const id = tr.dataset.id;
+            const rec = records.find(r => r.ID === id);
+            if (!rec) return;
+            tr.innerHTML = `
+    <td><input class="editU" value="${escapeInput(rec.Username)}"></td>
+    <td><input class="editF" type="number" value="${safeNum(rec.FanCount)}"></td>
+    <td><input class="editD" type="date" value="${isoDateOnly(rec.ScanDate)}"></td>
+    <td colspan="3"></td>
+    <td>
+      <div class="row-actions">
+        <button class="saveBtn">Save</button>
+        <button class="cancelBtn">Cancel</button>
+      </div>
+    </td>
+  `;
+            tr.querySelector(".cancelBtn").onclick = fetchAll;
+            tr.querySelector(".saveBtn").onclick = async () => {
+                const newU = tr.querySelector(".editU").value.trim();
+                const newF = safeNum(tr.querySelector(".editF").value);
+                const newD = tr.querySelector(".editD").value || isoDateOnly(new Date());
+                await updateRecord(id, { Username: newU, FanCount: newF, ScanDate: newD });
+            };
+        }
+        function escapeInput(s) { return String(s).replace(/"/g, '&quot;'); }
 
+        /* ---------- CRUD calls to Apps Script ---------- */
+        async function bulkInsert(arr) {
+            const payload = { action: "bulkCreate", payload: arr };
+            const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+            return res.json();
+        }
+        async function createRecord(obj) {
+            const payload = { action: "create", payload: obj };
+            const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+            return res.json();
+        }
+        async function updateRecord(id, obj) {
+            const payload = { action: "update", payload: Object.assign({ ID: id }, obj) };
+            const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+            const j = await res.json();
+            if (j.status === "ok") {
+                await fetchAll();
+            } else {
+                notify("Update failed: " + JSON.stringify(j));
+            }
+        }
+        async function deleteRecord(id) {
+            const payload = { action: "delete", payload: { ID: id } };
+            const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+            const j = await res.json();
+            if (j.status === "ok") {
+                await fetchAll();
+            } else {
+                notify("Delete failed");
+            }
+        }
+
+        /* ---------- Upload handler (parses your nested JSON) ---------- */
+        document.getElementById("uploadBtn").addEventListener("click", async () => {
+            const fi = document.getElementById("jsonFile");
+            if (!fi.files.length) return notify("Choose a JSON file first.");
+            const file = fi.files[0];
+            const txt = await file.text();
+            let arr;
+            try {
+                arr = JSON.parse(txt);
+                if (!Array.isArray(arr)) throw new Error("JSON must be an array of items");
+            } catch (err) {
+                return notify("Invalid JSON: " + err.message);
+            }
+
+            // Normalize each OCR item into the shape the backend expects
+            const normalized = arr.map(item => {
+                // Accept multiple possible field names
+                const fields = item.Fields || {};
+                const username = fields.Username || fields.username || item.Username || item.name || "";
+                const fanRaw = fields["Fan Count"] || fields["FanCount"] || fields.fanCount || item.FanCount || item.fan || "0";
+                const fan = safeNum(fanRaw);
+                const scanDate = item.ScanDate || item.scanDate || item.Date || new Date().toISOString();
+                return { Username: username, FanCount: fan, ScanDate: scanDate };
+            });
+
+            try {
+                document.getElementById("uploadBtn").disabled = true;
+                const resp = await bulkInsert(normalized);
+                document.getElementById("uploadBtn").disabled = false;
+                if (resp.status === "ok") {
+                    notify("Uploaded " + (resp.inserted || "items"));
+                    await fetchAll();
+                } else {
+                    notify("Upload error: " + JSON.stringify(resp));
+                }
+            } catch (err) {
+                document.getElementById("uploadBtn").disabled = false;
+                notify("Upload failed: " + err.message);
+            }
+        });
+
+        /* ---------- Manual add ---------- */
+        document.getElementById("addBtn").addEventListener("click", async () => {
+            const u = document.getElementById("manualName").value.trim();
+            const f = safeNum(document.getElementById("manualFan").value);
+            const d = document.getElementById("manualDate").value || isoDateOnly(new Date());
+            if (!u) return notify("Provide username");
+            await createRecord({ Username: u, FanCount: f, ScanDate: d });
+            document.getElementById("manualName").value = "";
+            document.getElementById("manualFan").value = "";
+            document.getElementById("manualDate").value = "";
+            await fetchAll();
+        });
+
+        /* ---------- Compute changes (UI) ---------- */
+        let currentPeriod = "all";
+        document.querySelectorAll(".tab").forEach(t => {
+            t.addEventListener("click", () => {
+                document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+                t.classList.add("active");
+                currentPeriod = t.dataset.period;
+            });
+        });
+        document.getElementById("computeBtn").addEventListener("click", () => {
+            const start = document.getElementById("rangeStart").value || null;
+            const end = document.getElementById("rangeEnd").value || null;
+            const results = computeChangeForPeriod(currentPeriod, records, start, end);
+            showTopChanges(results, 5);
+            showChangesList(results);
+        });
+        document.getElementById("exportBtn").addEventListener("click", () => {
+            const start = document.getElementById("rangeStart").value || null;
+            const end = document.getElementById("rangeEnd").value || null;
+            const results = computeChangeForPeriod(currentPeriod, records, start, end);
+            const rows = [["Username", "Prev", "Last", "Change", "PctChange"]];
+            results.forEach(r => rows.push([r.Username, r.prev, r.last, r.change, r.pctChange]));
+            const csv = rows.map(r => r.map(c => `"${String(c === null ? '' : c).replace(/"/g, '""')}"`).join(",")).join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `changes_${currentPeriod}_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        });
+
+        /* ---------- Change computation logic (client-side) ---------- */
+        function computeChangeForPeriod(period, data, start, end) {
+            const startT = start ? new Date(start).getTime() : null;
+            const endT = end ? new Date(end).getTime() : null;
+            const grouped = groupByUser(data);
+            const results = [];
+            Object.keys(grouped).forEach(user => {
+                const list = grouped[user].filter(it => {
+                    const t = new Date(it.ScanDate).getTime();
+                    if (isNaN(t)) return false;
+                    if (startT && t < startT) return false;
+                    if (endT && t > endT) return false;
+                    return true;
+                });
+                if (list.length === 0) return;
+                list.sort((a, b) => new Date(a.ScanDate) - new Date(b.ScanDate));
+                const last = list[list.length - 1].FanCount;
+                let prev = null;
+                if (period === "daily") prev = pickClosest(list, 1);
+                else if (period === "weekly") prev = pickClosest(list, 7);
+                else if (period === "monthly") prev = pickClosest(list, 30);
+                else prev = list[0].FanCount;
+                if (prev === null) results.push({ Username: user, last, prev: null, change: 0, pctChange: null });
+                else {
+                    const change = last - prev;
+                    const pct = prev ? (change / prev) * 100 : null;
+                    results.push({ Username: user, last, prev, change, pctChange: pct });
+                }
+            });
+            return results;
+        }
+        function pickClosest(list, dayGap) {
+            if (list.length < 2) return null;
+            const lastIdx = list.length - 1;
+            const lastDate = new Date(list[lastIdx].ScanDate);
+            for (let i = lastIdx - 1; i >= 0; i--) {
+                const dt = new Date(list[i].ScanDate);
+                const days = Math.round((lastDate - dt) / (1000 * 60 * 60 * 24));
+                if (dayGap === 1 && days >= 1 && days <= 3) return list[i].FanCount;
+                if (dayGap === 7 && days >= 6 && days <= 10) return list[i].FanCount;
+                if (dayGap === 30) {
+                    const months = (lastDate.getFullYear() - dt.getFullYear()) * 12 + (lastDate.getMonth() - dt.getMonth());
+                    if (months >= 1 && months <= 2) return list[i].FanCount;
+                }
+            }
+            // fallback to nearest previous
+            for (let i = lastIdx - 1; i >= 0; i--) return list[i].FanCount;
+            return null;
+        }
+        function showTopChanges(results, topN = 5) {
+            const el = document.getElementById("topList");
+            el.innerHTML = "";
+            const sorted = results.filter(r => r.prev !== null).sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+            sorted.slice(0, topN).forEach(r => {
+                const div = document.createElement("div");
+                div.className = "small";
+                const pct = r.pctChange === null ? "" : ` (${r.pctChange.toFixed(1)}%)`;
+                div.textContent = `${r.Username}: ${r.change >= 0 ? '+' : ''}${r.change} fans${pct} → now ${r.last}`;
+                el.appendChild(div);
+            });
+        }
+        function showChangesList(results) {
+            const area = document.getElementById("changesArea");
+            area.innerHTML = "";
+            const sorted = results.sort((a, b) => (b.change || 0) - (a.change || 0));
+            sorted.forEach(r => {
+                const div = document.createElement("div");
+                div.className = "small";
+                let txt = r.prev === null ? `${r.Username}: latest ${r.last} (no previous)` : `${r.Username}: ${r.prev} → ${r.last} (${r.change >= 0 ? '+' + r.change : r.change})${r.pctChange !== null ? ' (' + r.pctChange.toFixed(1) + '%)' : ''}`;
+                div.textContent = txt;
+                area.appendChild(div);
+            });
+        }
+
+        /* ---------- Init ---------- */
+        document.getElementById("refreshBtn").addEventListener("click", fetchAll);
+        (async function init() {
+            await fetchAll();
+        })();
+    </script>
 </body>
+
 </html>
