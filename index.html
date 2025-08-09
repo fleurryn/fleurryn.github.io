@@ -2,15 +2,29 @@
 <html>
 <head>
   <title>Player Fan Count Tracker</title>
+  <style>
+    table, th, td { border: 1px solid black; border-collapse: collapse; padding: 4px; }
+    button { margin: 2px; }
+  </style>
 </head>
 <body>
   <h1>Upload Player Data</h1>
   <input type="file" id="fileInput">
   <button onclick="uploadFile()">Upload</button>
 
-  <h2>View Data</h2>
-  <button onclick="fetchData()">Show All Data</button>
-  <pre id="output"></pre>
+  <h2>All Player Data</h2>
+  <button onclick="fetchData()">Refresh Table</button>
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>FanCount</th>
+        <th>ScanDate</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <h2>Stats</h2>
   <select id="period">
@@ -23,8 +37,9 @@
   <pre id="stats"></pre>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzFuioe_Vx3f2J0cjX-1Cab1YlGNoTLXmDI0P6toNTNHuKQC9L_onnWBYUSk7zI_HHh/exec"; // Replace
+const API_URL = "YOUR_WEB_APP_URL"; // Replace with your Apps Script web app URL
 
+// ===== Upload File =====
 function uploadFile() {
   const file = document.getElementById('fileInput').files[0];
   if (!file) return alert("No file selected");
@@ -52,19 +67,94 @@ function uploadFile() {
       method: 'POST',
       body: JSON.stringify({ action: 'upload', records }),
     }).then(res => res.json())
-      .then(data => alert("Upload complete"));
+      .then(() => {
+        alert("Upload complete");
+        fetchData();
+      });
   }
   reader.readAsText(file);
 }
 
+// ===== Fetch All Data =====
 function fetchData() {
   fetch(`${API_URL}?action=read`)
     .then(res => res.json())
     .then(data => {
-      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+      const tbody = document.querySelector("#dataTable tbody");
+      tbody.innerHTML = "";
+      data.forEach(row => {
+        const tr = document.createElement("tr");
+
+        // Username
+        const tdUser = document.createElement("td");
+        tdUser.contentEditable = true;
+        tdUser.textContent = row.Username;
+        tr.appendChild(tdUser);
+
+        // FanCount
+        const tdFan = document.createElement("td");
+        tdFan.contentEditable = true;
+        tdFan.textContent = row.FanCount;
+        tr.appendChild(tdFan);
+
+        // ScanDate
+        const tdDate = document.createElement("td");
+        tdDate.contentEditable = true;
+        tdDate.textContent = row.ScanDate;
+        tr.appendChild(tdDate);
+
+        // Actions
+        const tdActions = document.createElement("td");
+        const btnSave = document.createElement("button");
+        btnSave.textContent = "Save";
+        btnSave.onclick = () => updateRow(row.Username, row.ScanDate, tdUser.textContent, tdFan.textContent, tdDate.textContent);
+        
+        const btnDelete = document.createElement("button");
+        btnDelete.textContent = "Delete";
+        btnDelete.onclick = () => deleteRow(row.Username, row.ScanDate);
+
+        tdActions.appendChild(btnSave);
+        tdActions.appendChild(btnDelete);
+        tr.appendChild(tdActions);
+
+        tbody.appendChild(tr);
+      });
     });
 }
 
+// ===== Update Row =====
+function updateRow(oldUsername, oldScanDate, newUsername, newFanCount, newScanDate) {
+  fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'update',
+      OldUsername: oldUsername,
+      OldScanDate: oldScanDate,
+      Username: newUsername,
+      FanCount: newFanCount,
+      ScanDate: newScanDate
+    }),
+  }).then(res => res.json())
+    .then(() => {
+      alert("Row updated");
+      fetchData();
+    });
+}
+
+// ===== Delete Row =====
+function deleteRow(username, scanDate) {
+  if (!confirm(`Delete ${username} on ${scanDate}?`)) return;
+  fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'delete', Username: username, ScanDate: scanDate }),
+  }).then(res => res.json())
+    .then(() => {
+      alert("Row deleted");
+      fetchData();
+    });
+}
+
+// ===== Fetch Stats =====
 function fetchStats() {
   const period = document.getElementById('period').value;
   const asOf = document.getElementById('asOf').value;
@@ -74,6 +164,9 @@ function fetchStats() {
       document.getElementById('stats').textContent = JSON.stringify(data, null, 2);
     });
 }
+
+// Auto-load data on page open
+window.onload = fetchData;
 </script>
 </body>
 </html>
