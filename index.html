@@ -1,215 +1,79 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-
 <head>
-    <meta charset="utf-8" />
-    <title>Uma Rooma Tracker</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 16px;
-        }
-
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 12px;
-        }
-
-        th,
-        td {
-            border: 1px solid #ddd;
-            padding: 6px;
-            text-align: left;
-        }
-
-        th {
-            background: #f4f4f4;
-        }
-
-        .controls {
-            margin-bottom: 12px;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .small {
-            width: 120px;
-        }
-    </style>
+  <title>Player Fan Count Tracker</title>
 </head>
-
 <body>
-    <h2>Player Fan Tracker</h2>
+  <h1>Upload Player Data</h1>
+  <input type="file" id="fileInput">
+  <button onclick="uploadFile()">Upload</button>
 
-    <div class="controls">
-        <input type="file" id="jsonFile" accept=".json" />
-        <button id="uploadBtn">Upload JSON (daily)</button>
+  <h2>View Data</h2>
+  <button onclick="fetchData()">Show All Data</button>
+  <pre id="output"></pre>
 
-        <label>Stats period:
-            <select id="period">
-                <option value="day">Daily</option>
-                <option value="week">Weekly</option>
-                <option value="month">Monthly</option>
-            </select>
-        </label>
+  <h2>Stats</h2>
+  <select id="period">
+    <option value="day">Daily</option>
+    <option value="week">Weekly</option>
+    <option value="month">Monthly</option>
+  </select>
+  <input type="date" id="asOf">
+  <button onclick="fetchStats()">Get Stats</button>
+  <pre id="stats"></pre>
 
-        <label>As of:
-            <input type="date" id="asOf" class="small" />
-        </label>
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbzFuioe_Vx3f2J0cjX-1Cab1YlGNoTLXmDI0P6toNTNHuKQC9L_onnWBYUSk7zI_HHh/exec"; // Replace
 
-        <button id="refreshBtn">Refresh</button>
-    </div>
+function uploadFile() {
+  const file = document.getElementById('fileInput').files[0];
+  if (!file) return alert("No file selected");
 
-    <div id="message"></div>
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    let text = e.target.result;
+    let records;
+    if (file.name.endsWith('.json')) {
+      records = JSON.parse(text);
+    } else if (file.name.endsWith('.tsv')) {
+      let lines = text.trim().split("\n");
+      let headers = lines[0].split("\t");
+      records = lines.slice(1).map(line => {
+        let values = line.split("\t");
+        let obj = {};
+        headers.forEach((h, i) => obj[h] = values[i]);
+        return obj;
+      });
+    } else {
+      return alert("Invalid file format");
+    }
 
-    <h3>Player Stats</h3>
-    <div id="statsContainer"></div>
+    fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'upload', records }),
+    }).then(res => res.json())
+      .then(data => alert("Upload complete"));
+  }
+  reader.readAsText(file);
+}
 
-    <h3>All Records</h3>
-    <div id="recordsContainer"></div>
+function fetchData() {
+  fetch(`${API_URL}?action=read`)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+    });
+}
 
-    <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbxbRS9yJUqlBjgcUk1Q0fJMK0y2oWPt1sv5qDuOAwWP8X9OFifO3-HuRjbu2HEWHVoK/exec';
-        const uploadBtn = document.getElementById('uploadBtn');
-        const refreshBtn = document.getElementById('refreshBtn');
-        const jsonFile = document.getElementById('jsonFile');
-        const periodSelect = document.getElementById('period');
-        const asOfInput = document.getElementById('asOf');
-        const msg = document.getElementById('message');
-
-        function showMessage(s, error = false) { msg.textContent = s; msg.style.color = error ? 'red' : 'green'; }
-
-        uploadBtn.onclick = () => {
-            const f = jsonFile.files[0];
-            if (!f) return showMessage('Choose a JSON file first', true);
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const parsed = JSON.parse(e.target.result);
-                    // If the file contains single object with 'records' or plain array, normalize:
-                    const records = Array.isArray(parsed) ? parsed : (parsed.records || []);
-                    if (!records.length) return showMessage('No records found in JSON', true);
-                    // POST upload
-                    const res = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'upload', records })
-                    });
-                    const j = await res.json();
-                    if (j.status === 'ok') {
-                        showMessage('Uploaded ' + (j.added || '0') + ' records');
-                        loadAll();
-                        loadStats();
-                    } else showMessage('Upload error: ' + (j.message || JSON.stringify(j)), true);
-                } catch (err) {
-                    console.error(err);
-                    showMessage('Error: ' + err.message, true);
-                }
-
-            };
-            reader.readAsText(f);
-        };
-
-        refreshBtn.onclick = () => { loadAll(); loadStats(); };
-
-        async function loadAll() {
-            const res = await fetch(API_URL + '?action=read');
-            const j = await res.json();
-            if (j.status !== 'ok') return showMessage('Failed to load records', true);
-            renderAll(j.data);
-        }
-
-        function renderAll(data) {
-            if (!data) return;
-            const container = document.getElementById('recordsContainer');
-            let html = '<table><thead><tr><th>Username</th><th>FanCount</th><th>Date</th><th>CreatedAt</th><th>Actions</th></tr></thead><tbody>';
-            data.forEach(r => {
-                html += `<tr>
-      <td>${escapeHtml(r.username)}</td>
-      <td>${r.fanCount}</td>
-      <td>${r.date}</td>
-      <td>${r.createdAt}</td>
-      <td>
-        <button onclick="editRecord('${escapeJs(r.username)}','${r.date}')">Edit</button>
-        <button onclick="deleteRecord('${escapeJs(r.username)}','${r.date}')">Delete</button>
-      </td>
-    </tr>`;
-            });
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        }
-
-        function escapeHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-        function escapeJs(s) { return String(s || '').replace(/'/g, "\\'").replace(/"/g, '\\"'); }
-
-        window.editRecord = async (username, date) => {
-            const newVal = prompt(`Update fanCount for ${username} on ${date}:`);
-            if (newVal === null) return;
-            const num = Number(newVal);
-            if (isNaN(num)) return alert('invalid number');
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'update', record: { username, date, fanCount: num } })
-            });
-            const j = await res.json();
-            if (j.status === 'ok') { showMessage('Updated'); loadAll(); loadStats(); } else showMessage('Update error', true);
-        };
-
-        window.deleteRecord = async (username, date) => {
-            if (!confirm(`Delete ${username} @ ${date}?`)) return;
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'delete', record: { username, date } })
-            });
-            const j = await res.json();
-            if (j.status === 'ok') { showMessage('Deleted'); loadAll(); loadStats(); } else showMessage('Delete error', true);
-        };
-
-        async function loadStats() {
-            const period = periodSelect.value;
-            const asOf = asOfInput.value || '';
-            const q = new URL(API_URL);
-            q.searchParams.set('action', 'stats');
-            q.searchParams.set('period', period);
-            if (asOf) q.searchParams.set('asOf', asOf);
-            const res = await fetch(q.toString());
-            const j = await res.json();
-            if (j.status !== 'ok') return showMessage('Failed to load stats', true);
-            renderStats(j.stats);
-        }
-
-        function renderStats(statsResponse) {
-            const container = document.getElementById('statsContainer');
-            const players = statsResponse.players || {};
-            let html = `<div>Period: ${statsResponse.period} — ${statsResponse.startDate} to ${statsResponse.endDate} (as of ${statsResponse.asOf})</div>`;
-            html += '<table><thead><tr><th>Username</th><th>StartCount</th><th>EndCount</th><th>Delta</th><th>% Change</th></tr></thead><tbody>';
-            Object.values(players).sort((a, b) => (b.delta || 0) - (a.delta || 0)).forEach(p => {
-                html += `<tr>
-      <td>${escapeHtml(p.username)}</td>
-      <td>${p.startCount === null ? '-' : p.startCount}</td>
-      <td>${p.endCount === null ? '-' : p.endCount}</td>
-      <td>${p.delta === null ? '-' : p.delta}</td>
-      <td>${p.pctChange === null ? '-' : p.pctChange + '%'}</td>
-    </tr>`;
-            });
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        }
-
-        // init
-        (function () {
-            // set asOf to today by default
-            const d = new Date();
-            asOfInput.value = d.toISOString().slice(0, 10);
-            loadAll();
-            loadStats();
-        })();
-    </script>
+function fetchStats() {
+  const period = document.getElementById('period').value;
+  const asOf = document.getElementById('asOf').value;
+  fetch(`${API_URL}?action=stats&period=${period}&asOf=${asOf}`)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('stats').textContent = JSON.stringify(data, null, 2);
+    });
+}
+</script>
 </body>
-
 </html>
