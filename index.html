@@ -5,6 +5,9 @@
   <style>
     table, th, td { border: 1px solid black; border-collapse: collapse; padding: 4px; }
     button { margin: 2px; }
+    .positive { color: green; font-weight: bold; }
+    .negative { color: red; font-weight: bold; }
+    .neutral { color: grey; }
   </style>
 </head>
 <body>
@@ -12,8 +15,8 @@
   <input type="file" id="fileInput">
   <button onclick="uploadFile()">Upload</button>
 
-  <h2>All Player Data</h2>
-  <button onclick="fetchData()">Refresh Table</button>
+  <h2>Latest Player Data</h2>
+  <button onclick="fetchLatest()">Refresh Table</button>
   <table id="dataTable">
     <thead>
       <tr>
@@ -26,7 +29,7 @@
     <tbody></tbody>
   </table>
 
-  <h2>Stats</h2>
+  <h2>Fan Count Changes</h2>
   <select id="period">
     <option value="day">Daily</option>
     <option value="week">Weekly</option>
@@ -34,12 +37,20 @@
   </select>
   <input type="date" id="asOf">
   <button onclick="fetchStats()">Get Stats</button>
-  <pre id="stats"></pre>
+
+  <table id="statsTable">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Change</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxm5wJyuTH8YIPLH9vDB1FPaMmDmX9hb2dESao8AoAWdUrxrhxY-sSHunz7qDAbQTcB/exec"; // Replace with your Apps Script web app URL
+const API_URL = "https://script.google.com/macros/s/AKfycbynV54ephcRJdSoqexk_qgI4NY1z-uRSZW1tg4APY8uTos0PAurvzxg25vdyfBPi4uN/exec"; // Replace with your Apps Script URL
 
-// ===== Upload File =====
 function uploadFile() {
   const file = document.getElementById('fileInput').files[0];
   if (!file) return alert("No file selected");
@@ -69,15 +80,15 @@ function uploadFile() {
     }).then(res => res.json())
       .then(() => {
         alert("Upload complete");
-        fetchData();
+        fetchLatest();
       });
   }
   reader.readAsText(file);
 }
 
-// ===== Fetch All Data =====
-function fetchData() {
-  fetch(`${API_URL}?action=read`)
+// Fetch only the latest date's data
+function fetchLatest() {
+  fetch(`${API_URL}?action=latest`)
     .then(res => res.json())
     .then(data => {
       const tbody = document.querySelector("#dataTable tbody");
@@ -85,25 +96,21 @@ function fetchData() {
       data.forEach(row => {
         const tr = document.createElement("tr");
 
-        // Username
         const tdUser = document.createElement("td");
         tdUser.contentEditable = true;
         tdUser.textContent = row.Username;
         tr.appendChild(tdUser);
 
-        // FanCount
         const tdFan = document.createElement("td");
         tdFan.contentEditable = true;
         tdFan.textContent = row.FanCount;
         tr.appendChild(tdFan);
 
-        // ScanDate
         const tdDate = document.createElement("td");
         tdDate.contentEditable = true;
         tdDate.textContent = row.ScanDate;
         tr.appendChild(tdDate);
 
-        // Actions
         const tdActions = document.createElement("td");
         const btnSave = document.createElement("button");
         btnSave.textContent = "Save";
@@ -122,7 +129,6 @@ function fetchData() {
     });
 }
 
-// ===== Update Row =====
 function updateRow(oldUsername, oldScanDate, newUsername, newFanCount, newScanDate) {
   fetch(API_URL, {
     method: 'POST',
@@ -137,11 +143,10 @@ function updateRow(oldUsername, oldScanDate, newUsername, newFanCount, newScanDa
   }).then(res => res.json())
     .then(() => {
       alert("Row updated");
-      fetchData();
+      fetchLatest();
     });
 }
 
-// ===== Delete Row =====
 function deleteRow(username, scanDate) {
   if (!confirm(`Delete ${username} on ${scanDate}?`)) return;
   fetch(API_URL, {
@@ -150,24 +155,39 @@ function deleteRow(username, scanDate) {
   }).then(res => res.json())
     .then(() => {
       alert("Row deleted");
-      fetchData();
+      fetchLatest();
     });
 }
 
-// ===== Fetch Stats =====
+// Better stats table
 function fetchStats() {
   const period = document.getElementById('period').value;
   const asOf = document.getElementById('asOf').value;
   fetch(`${API_URL}?action=stats&period=${period}&asOf=${asOf}`)
     .then(res => res.json())
     .then(data => {
-      document.getElementById('stats').textContent = JSON.stringify(data, null, 2);
+      const tbody = document.querySelector("#statsTable tbody");
+      tbody.innerHTML = "";
+      data.forEach(row => {
+        const tr = document.createElement("tr");
+
+        const tdUser = document.createElement("td");
+        tdUser.textContent = row.username;
+        tr.appendChild(tdUser);
+
+        const tdChange = document.createElement("td");
+        tdChange.textContent = row.change;
+        if (row.change > 0) tdChange.classList.add("positive");
+        else if (row.change < 0) tdChange.classList.add("negative");
+        else tdChange.classList.add("neutral");
+        tr.appendChild(tdChange);
+
+        tbody.appendChild(tr);
+      });
     });
 }
 
-// Auto-load data on page open
-window.onload = fetchData;
+window.onload = fetchLatest;
 </script>
 </body>
 </html>
-
