@@ -39,8 +39,7 @@
             color: #444;
         }
 
-        input[type=file],
-        input[type=date] {
+        input, select, button {
             margin-top: 10px;
             margin-bottom: 10px;
             display: block;
@@ -51,13 +50,9 @@
         }
 
         button {
-            padding: 10px 18px;
             background: #945ec2;
             color: white;
-            border: none;
-            border-radius: 4px;
             cursor: pointer;
-            font-size: 0.95em;
         }
 
         button:hover {
@@ -82,8 +77,7 @@
             font-weight: 500;
         }
 
-        td:first-child,
-        th:first-child {
+        td:first-child, th:first-child {
             text-align: left;
         }
     </style>
@@ -101,18 +95,73 @@
             <p id="uploadStatus"></p>
         </div>
 
-        <!-- View Changes Section -->
+        <!-- Query Section -->
         <div class="section">
-            <h2>View Changes</h2>
-            <label>Select Date:</label>
-            <input type="date" id="datePicker">
-            <button onclick="fetchChanges()">Get Changes</button>
+            <h2>View Data</h2>
+
+            <label>Query Type:</label>
+            <select id="typeSelect">
+                <option value="player_range">Fan Counts</option>
+                <option value="sort">Fan Gains</option>
+                <option value="total_range">Total Fan Gain</option>
+            </select>
+
+            <!-- Username -->
+            <input type="text" id="usernameInput" placeholder="Enter username" style="display:none;">
+
+            <!-- Single Date -->
+            <input type="date" id="dateInput" style="display:none;">
+
+            <!-- Date Range -->
+            <div id="rangeInputs">
+                <label>Start Date:</label>
+                <input type="date" id="startDate">
+                <label>End Date:</label>
+                <input type="date" id="endDate">
+            </div>
+
+            <!-- Sort Order -->
+            <select id="orderInput" style="display:none;">
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+            </select>
+
+            <button onclick="fetchData()">Get Data</button>
             <div id="changesContainer"></div>
         </div>
+    </div>
 
     <script>
-        // Change to your deployed Apps Script web app URL
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw5WX9OQ9AjPxMuF22_X90v0JjwBtKL8WAjIZhvKfO_Y5EK4VSFAsb1lyDWi6mUSbC2Mw/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxskH-1pRKTtCpAZ-5KeBw_ZIl0xefFLgpxBOjoXNCFM-5PiETSVSF3rnssvKqdAlv2lg/exec";
+
+        // Show/hide inputs based on query type
+        document.getElementById("typeSelect").addEventListener("change", function () {
+        const type = this.value;
+        const usernameInput = document.getElementById("usernameInput");
+        const orderInput = document.getElementById("orderInput");
+        const dateInput = document.getElementById("dateInput");
+        const rangeInputs = document.getElementById("rangeInputs");
+
+        // username needed for single-player or player-range queries
+        usernameInput.style.display = (type === "player") ? "block" : "none";
+
+        // order/select shown only for sort
+        orderInput.style.display = (type === "sort") ? "block" : "none";
+
+        // show single-date for single-day queries
+        if (type === "player" || type === "total_day") {
+            dateInput.style.display = "block";
+            rangeInputs.style.display = "none";
+        }
+        // show date range for range and also for sort
+        else if (type === "player_range" || type === "total_range" || type === "sort") {
+            dateInput.style.display = "none";
+            rangeInputs.style.display = "block";
+        } else {
+            dateInput.style.display = "none";
+            rangeInputs.style.display = "none";
+        }
+        });
 
         async function uploadJSON() {
             const fileInput = document.getElementById('jsonFile');
@@ -134,75 +183,89 @@
                 });
 
                 const result = await response.json();
-                if (result.status === "success") {
-                    statusEl.textContent = "Upload successful!";
-                    statusEl.style.color = "green";
-                } else {
-                    statusEl.textContent = "Upload failed: " + result.message;
-                    statusEl.style.color = "red";
-                }
+                statusEl.textContent = result.status === "success" ? "Upload successful!" : "Upload failed: " + result.message;
+                statusEl.style.color = result.status === "success" ? "green" : "red";
             } catch (err) {
                 statusEl.textContent = "Error uploading: " + err;
                 statusEl.style.color = "red";
             }
         }
 
-        async function fetchChanges() {
-            const dateValue = document.getElementById('datePicker').value;
-            if (!dateValue) {
-                alert("Please select a date.");
-                return;
+        async function fetchData() {
+            const type = document.getElementById("typeSelect").value;
+            const username = document.getElementById("usernameInput").value.trim();
+            const date = document.getElementById("dateInput").value;
+            const startDate = document.getElementById("startDate").value;
+            const endDate = document.getElementById("endDate").value;
+            const order = document.getElementById("orderInput").value;
+
+            let url = `${WEB_APP_URL}?type=${encodeURIComponent(type)}`;
+
+            // Add username if present / required
+            if (type === "player" && username) {
+                url += `&username=${encodeURIComponent(username)}`;
             }
 
+            // Single-day queries
+            if (type === "player" || type === "total_day") {
+                if (!date) { alert("Please select a date."); return; }
+                url += `&date=${encodeURIComponent(date)}`;
+            }
+
+            // Range queries (also used by sort)
+            if (type === "player_range" || type === "total_range" || type === "sort") {
+                if (!startDate || !endDate) { alert("Please select both start and end dates."); return; }
+                url += `&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
+            }
+
+            // Sort-specific param
+            if (type === "sort") {
+                url += `&order=${encodeURIComponent(order)}`;
+            }
+
+            // Fetch and render (same as before)
             try {
-                const response = await fetch(`${WEB_APP_URL}?date=${encodeURIComponent(dateValue)}`);
+                const response = await fetch(url);
                 const result = await response.json();
 
-                if (result.status !== "success") {
-                    alert("Error: " + result.message);
-                    return;
-                }
-
-                // Clear old table
                 const container = document.getElementById("changesContainer");
                 container.innerHTML = "";
 
+                if (result.status !== "success") {
+                container.innerHTML = `<p style="color:red;">Error: ${result.message}</p>`;
+                return;
+                }
+
                 const tableData = result.data;
                 if (!tableData || tableData.length === 0) {
-                    container.innerHTML = "<p>No data found for this date.</p>";
-                    return;
+                container.innerHTML = "<p>No data found.</p>";
+                return;
                 }
 
                 const table = document.createElement("table");
-
-                // Add headers
                 const headerRow = document.createElement("tr");
                 tableData[0].forEach(header => {
-                    const th = document.createElement("th");
-                    th.textContent = header;
-                    headerRow.appendChild(th);
+                const th = document.createElement("th");
+                th.textContent = header;
+                headerRow.appendChild(th);
                 });
                 table.appendChild(headerRow);
 
-                // Add rows
                 for (let i = 1; i < tableData.length; i++) {
-                    const tr = document.createElement("tr");
-                    tableData[i].forEach(cell => {
-                        const td = document.createElement("td");
-                        td.textContent = cell;
-                        tr.appendChild(td);
-                    });
-                    table.appendChild(tr);
+                const tr = document.createElement("tr");
+                tableData[i].forEach(cell => {
+                    const td = document.createElement("td");
+                    td.textContent = cell;
+                    tr.appendChild(td);
+                });
+                table.appendChild(tr);
                 }
-
                 container.appendChild(table);
 
             } catch (err) {
-                alert("Error fetching changes: " + err);
+                document.getElementById("changesContainer").innerHTML = `<p style="color:red;">Error fetching data: ${err}</p>`;
             }
-        }
+            }
     </script>
-
 </body>
-
 </html>
