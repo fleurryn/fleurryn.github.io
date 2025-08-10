@@ -10,7 +10,7 @@
             --bg: #f7f7f8;
             --card: #fff;
             --accent: #0f62fe;
-            --muted: #ffffff;
+            --muted: #6a6a6a;
             --radius: 10px;
             --shadow: 0 6px 18px rgba(12, 20, 60, 0.06);
             font-family: Inter, system-ui, Arial;
@@ -103,7 +103,7 @@
         thead th {
             background: #fbfbff;
             padding: 8px;
-            color: var(--muted);
+            color: #ffffff;
             text-align: left;
             border-bottom: 1px solid #eee;
         }
@@ -116,6 +116,11 @@
         .small {
             font-size: 0.85rem;
             color: var(--muted);
+        }
+
+        .smallth {
+            font-size: 0.85rem;
+            color: #ffffff;
         }
 
         .row-actions {
@@ -168,7 +173,7 @@
     <header>
         <div class="container">
             <h1>Uma Rooma Fan Tracker</h1>
-            <div class="small">Upload daily OCR JSON · Store in Google Sheets · Track changes</div>
+            <div class="smallth">Upload daily OCR JSON · Store in Google Sheets · Track changes</div>
         </div>
     </header>
 
@@ -258,7 +263,7 @@
 
     <script>
         /* ---------- CONFIG: paste your Apps Script Web App URL here ---------- */
-        const API_URL = "https://script.google.com/macros/s/AKfycbyIcIlF5x5PwXBp9B_Pcjaol-Q_EycWXTH1t_fbWLtyRjlbBCo1yVHtZTyurv7EI87Ehw/exec"; // << replace me
+        const API_URL = "https://script.google.com/macros/s/AKfycbw9Zgd_FpRfVWQ4qcovQtINyjr6Fw5AMCvP4SJh-u0LqsVbv-z3ZU3fHdGEeWaHwyj6Iw/exec"; // << replace me
 
         /* ---------- Utils ---------- */
         function notify(s) { alert(s); }
@@ -631,7 +636,5 @@
 </body>
 
 </html>
-
-
 
 
