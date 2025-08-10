@@ -102,7 +102,8 @@
             <label>Query Type:</label>
             <select id="typeSelect">
                 <option value="player_range">Fan Counts</option>
-                <option value="sort">Fan Gains</option>
+                <option value="daily_gains_table">Daily Gains</option>
+                <option value="sort">Quota Check</option>
                 <option value="total_range">Total Fan Gain</option>
             </select>
 
@@ -132,7 +133,7 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxskH-1pRKTtCpAZ-5KeBw_ZIl0xefFLgpxBOjoXNCFM-5PiETSVSF3rnssvKqdAlv2lg/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzi1CBX4lB35bWPwzoarynMThoetQ1xKVAfW3cD9znOeFFXfWwkos3fPY8TJQmVim8fOg/exec";
 
         // Show/hide inputs based on query type
         document.getElementById("typeSelect").addEventListener("change", function () {
@@ -154,7 +155,7 @@
             rangeInputs.style.display = "none";
         }
         // show date range for range and also for sort
-        else if (type === "player_range" || type === "total_range" || type === "sort") {
+        else if (type === "player_range" || type === "total_range" || type === "sort" || type === "daily_gains_table") {
             dateInput.style.display = "none";
             rangeInputs.style.display = "block";
         } else {
@@ -213,7 +214,7 @@
             }
 
             // Range queries (also used by sort)
-            if (type === "player_range" || type === "total_range" || type === "sort") {
+            if (type === "player_range" || type === "total_range" || type === "sort" || type === "daily_gains_table") {
                 if (!startDate || !endDate) { alert("Please select both start and end dates."); return; }
                 url += `&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
             }
