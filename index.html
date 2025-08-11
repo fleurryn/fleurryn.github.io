@@ -445,9 +445,9 @@
 
                 if (data.status === "success") {
                     document.getElementById("comparisonResult").innerHTML =
-                    `<strong>Uma Rooma's Value:</strong> ${data.data.myValue.toFixed(2)}<br>
-                    <strong>Other Club's Value:</strong> ${data.data.otherValue.toFixed(2)}<br>
-                    <strong>Difference:</strong> ${data.data.difference.toFixed(2)}`;
+                    `<strong>Uma Rooma's Value:</strong> ${data.data.myValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <br>
+                    <strong>Other Club's Value:</strong> ${data.data.otherValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<br>
+                    <strong>Difference:</strong> ${data.data.difference.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 } else {
                     document.getElementById("comparisonResult").innerText = "Error: " + data.message;
                 }
@@ -477,11 +477,11 @@
                         data.data.forEach(row => {
                             html += `<tr>
                                 <td>${row[0]}</td>
-                                <td>${row[1].toFixed(2)}</td>
-                                <td>${row[2].toFixed(2)}</td>
-                                <td>${row[3].toFixed(2)}</td>
-                                <td>${row[4].toFixed(2)}</td>
-                                <td>${row[5].toFixed(2)}</td>
+                                <td>${row[1].toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td>${row[2].toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td>${row[3].toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td>${row[4].toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td>${row[5].toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             </tr>`;
                         });
                         html += "</table>";
