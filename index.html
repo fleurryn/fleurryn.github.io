@@ -95,6 +95,76 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .my-table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .my-table th, .my-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        .my-table tr:nth-child(odd) {
+            background-color: #f4f4f6;
+        }
+
+        .my-table tr:hover {
+            background-color: #d5d5d5;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* smooth mobile scroll */
+        }
+
+        .table-wrapper table {
+            border-collapse: collapse;
+            min-width: max-content; /* prevent squishing */
+        }
+
+        .table-wrapper th,
+        .table-wrapper td {
+            white-space: nowrap; /* keep cells on one line */
+        }
+
+        .table-wrapper th:first-child,
+        .table-wrapper td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+        }
+
+        .table-wrapper th:nth-child(2),
+        .table-wrapper td:nth-child(2) {
+            position: sticky;
+            left: 25px;
+            z-index: 2;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+        }
+
+        /* Alternate shading for sticky columns */
+        .table-wrapper tr:nth-child(odd) th:first-child,
+        .table-wrapper tr:nth-child(odd) td:first-child,
+        .table-wrapper tr:nth-child(odd) th:nth-child(2),
+        .table-wrapper tr:nth-child(odd) td:nth-child(2) {
+            background: #f4f4f6; /* your odd row color */
+        }
+
+        .table-wrapper tr:nth-child(even) th:first-child,
+        .table-wrapper tr:nth-child(even) td:first-child,
+        .table-wrapper tr:nth-child(even) th:nth-child(2),
+        .table-wrapper tr:nth-child(even) td:nth-child(2) {
+            background: #fff; /* your even row color */
+        }
+
+        .table-wrapper tr:hover td,
+        .table-wrapper tr:hover th {
+            background-color: #d5d5d5 !important; /* hover color */
+        }
+
     </style>
 </head>
 
@@ -117,9 +187,7 @@
             <label>Query Type:</label>
             <select id="typeSelect">
                 <option value="player_range">Fan Counts</option>
-                <option value="daily_gains_table">Daily Gains</option>
-                <option value="sort">Quota Check</option>
-                <option value="total_range">Total Fan Gain</option>
+                <option value="quota_gains_table">Quota Check</option>
             </select>
 
             <!-- Username -->
@@ -155,7 +223,7 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxOOvrmu2E0OZXiktcDYZy0N7RR5YEoizmV-gi6yK5-O6L0V6pJvsa0SH5GU42i5Xkh2w/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw83JYQftiwkv5vOYw9ynnOKFEeheoQ_U_86dRtV7Ntj6bMqNOqKd1Ua8aLzLu3LQAQHQ/exec";
 
         // Show/hide inputs based on query type
         document.getElementById("typeSelect").addEventListener("change", function () {
@@ -169,7 +237,7 @@
         usernameInput.style.display = (type === "player") ? "block" : "none";
 
         // order/select shown for sort, player_range, and daily_gains_table
-        orderInput.style.display = (type === "sort" || type === "player_range" || type === "daily_gains_table") ? "block" : "none";
+        orderInput.style.display = (type === "quota_gains_table" || type === "player_range" || type === "daily_gains_table") ? "block" : "none";
 
         // show single-date for single-day queries
         if (type === "player" || type === "total_day") {
@@ -177,7 +245,7 @@
             rangeInputs.style.display = "none";
         }
         // show date range for range and also for sort
-        else if (type === "player_range" || type === "total_range" || type === "sort" || type === "daily_gains_table") {
+        else if (type === "player_range" || type === "total_range" || type === "quota_gains_table" || type === "daily_gains_table") {
             dateInput.style.display = "none";
             rangeInputs.style.display = "block";
         } else {
@@ -243,13 +311,13 @@
             }
 
             // Range queries (also used by sort)
-            if (type === "player_range" || type === "total_range" || type === "sort" || type === "daily_gains_table") {
+            if (type === "player_range" || type === "total_range" || type === "quota_gains_table" || type === "daily_gains_table") {
                 if (!startDate || !endDate) { alert("Please select both start and end dates."); return; }
                 url += `&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
             }
 
             // Sort-specific param
-            if (type === "sort" || type === "player_range" || type === "daily_gains_table") {
+            if (type === "quota_gains_table" || type === "player_range" || type === "daily_gains_table") {
                 url += `&order=${encodeURIComponent(order)}`;
             }
 
@@ -275,34 +343,54 @@
                 return;
                 }
 
+                // Create table and header
                 const table = document.createElement("table");
+                table.classList.add("my-table"); // for CSS styling
+                const headers = ["#", ...tableData[0]]; // Add serial number column
                 const headerRow = document.createElement("tr");
-                tableData[0].forEach(header => {
-                const th = document.createElement("th");
-                th.textContent = header;
-                headerRow.appendChild(th);
+
+                headers.forEach(header => {
+                    const th = document.createElement("th");
+                    th.textContent = header;
+                    headerRow.appendChild(th);
                 });
                 table.appendChild(headerRow);
 
+                // Create table rows with serial numbers
                 for (let i = 1; i < tableData.length; i++) {
                     const tr = document.createElement("tr");
-                    tableData[i].forEach((cell, idx) => {
+
+                    // Serial number cell
+                    const snTd = document.createElement("td");
+                    snTd.textContent = i; // starts from 1
+                    tr.appendChild(snTd);
+
+                    let row = tableData[i];
+
+                    if (!Array.isArray(row)) {
+                        row = headers.slice(1).map(h => row[h]); // skip SN column in mapping
+                    }
+
+                    row.forEach((cell, idx) => {
                         const td = document.createElement("td");
                         td.textContent = typeof cell === "number" ? cell.toLocaleString() : cell;
 
-                        // Color gains column for sort type
-                        if (type === "sort" && idx === 1) {
-                        const gain = tableData[i][1];
-                        const meetsQuota = tableData[i][2] === "✅";
-                        td.style.color = meetsQuota ? "green" : "red";
-                        td.style.fontWeight = "bold";
+                        // Color Quota Met? column for quota_gains_table
+                        if (type === "quota_gains_table" && idx === row.length - 1 && i < tableData.length - 1) {
+                            td.style.color = cell === "✅" ? "green" : "red";
+                            td.style.fontWeight = "bold";
                         }
 
                         tr.appendChild(td);
                     });
+
                     table.appendChild(tr);
-                    }
-                container.appendChild(table);
+                }
+
+                const tableWrapper = document.createElement("div");
+                tableWrapper.className = "table-wrapper";
+                tableWrapper.appendChild(table);
+                container.appendChild(tableWrapper);
 
             } catch (err) {
                 spinner.style.display = "none";
