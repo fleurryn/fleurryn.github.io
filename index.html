@@ -155,7 +155,7 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby4oWlgUqpfPXaDgbAoYyyGXOyJuXfETBygnFEGJgg00PgpnE9XtodAO6Gl2qWD5LizXg/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxOOvrmu2E0OZXiktcDYZy0N7RR5YEoizmV-gi6yK5-O6L0V6pJvsa0SH5GU42i5Xkh2w/exec";
 
         // Show/hide inputs based on query type
         document.getElementById("typeSelect").addEventListener("change", function () {
@@ -286,20 +286,22 @@
 
                 for (let i = 1; i < tableData.length; i++) {
                     const tr = document.createElement("tr");
-                    tableData[i].forEach((cell, colIndex) => {
+                    tableData[i].forEach((cell, idx) => {
                         const td = document.createElement("td");
+                        td.textContent = typeof cell === "number" ? cell.toLocaleString() : cell;
 
-                        // Format numbers with commas, skip first column (usernames)
-                        if (colIndex > 0 && !isNaN(cell) && cell !== "") {
-                            td.textContent = Number(cell).toLocaleString();
-                        } else {
-                            td.textContent = cell;
+                        // Color gains column for sort type
+                        if (type === "sort" && idx === 1) {
+                        const gain = tableData[i][1];
+                        const meetsQuota = tableData[i][2] === "✅";
+                        td.style.color = meetsQuota ? "green" : "red";
+                        td.style.fontWeight = "bold";
                         }
 
                         tr.appendChild(td);
                     });
                     table.appendChild(tr);
-                }
+                    }
                 container.appendChild(table);
 
             } catch (err) {
@@ -310,5 +312,3 @@
     </script>
 </body>
 </html>
-
-
