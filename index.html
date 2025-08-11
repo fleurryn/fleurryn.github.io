@@ -80,6 +80,21 @@
         td:first-child, th:first-child {
             text-align: left;
         }
+
+        .spinner {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #945ec2;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+            margin: auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 
@@ -123,17 +138,24 @@
 
             <!-- Sort Order -->
             <select id="orderInput">
-                <option value="asc">Ascending</option>
+                <option value="none">Normal Order</option>
                 <option value="desc">Descending</option>
-            </select>
-
+                <option value="asc">Ascending</option>
+              </select>
+              
             <button onclick="fetchData()">Get Data</button>
+
+            <div id="loadingSpinner" style="display:none; text-align:center; padding:20px;">
+                <div class="spinner"></div>
+                <p>Loading Table...</p>
+            </div>
+            
             <div id="changesContainer"></div>
         </div>
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxvYiO4bo_HtdwwXr8dIj_Ulz4Gg1QgtHG0hNMySXlKqqdWps-pE4PN7bEJ_f3WSaDJ3Q/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby4oWlgUqpfPXaDgbAoYyyGXOyJuXfETBygnFEGJgg00PgpnE9XtodAO6Gl2qWD5LizXg/exec";
 
         // Show/hide inputs based on query type
         document.getElementById("typeSelect").addEventListener("change", function () {
@@ -193,6 +215,13 @@
         }
 
         async function fetchData() {
+            const spinner = document.getElementById("loadingSpinner");
+            const container = document.getElementById("changesContainer");
+
+            // Show spinner, clear old table
+            spinner.style.display = "block";
+            container.innerHTML = "";
+
             const type = document.getElementById("typeSelect").value;
             const username = document.getElementById("usernameInput").value.trim();
             const date = document.getElementById("dateInput").value;
@@ -220,7 +249,7 @@
             }
 
             // Sort-specific param
-            if (type === "sort") {
+            if (type === "sort" || type === "player_range" || type === "daily_gains_table") {
                 url += `&order=${encodeURIComponent(order)}`;
             }
 
@@ -229,8 +258,11 @@
                 const response = await fetch(url);
                 const result = await response.json();
 
+                spinner.style.display = "none";
+
                 const container = document.getElementById("changesContainer");
                 container.innerHTML = "";
+
 
                 if (result.status !== "success") {
                 container.innerHTML = `<p style="color:red;">Error: ${result.message}</p>`;
@@ -253,21 +285,30 @@
                 table.appendChild(headerRow);
 
                 for (let i = 1; i < tableData.length; i++) {
-                const tr = document.createElement("tr");
-                tableData[i].forEach(cell => {
-                    const td = document.createElement("td");
-                    td.textContent = cell;
-                    tr.appendChild(td);
-                });
-                table.appendChild(tr);
+                    const tr = document.createElement("tr");
+                    tableData[i].forEach((cell, colIndex) => {
+                        const td = document.createElement("td");
+
+                        // Format numbers with commas, skip first column (usernames)
+                        if (colIndex > 0 && !isNaN(cell) && cell !== "") {
+                            td.textContent = Number(cell).toLocaleString();
+                        } else {
+                            td.textContent = cell;
+                        }
+
+                        tr.appendChild(td);
+                    });
+                    table.appendChild(tr);
                 }
                 container.appendChild(table);
 
             } catch (err) {
+                spinner.style.display = "none";
                 document.getElementById("changesContainer").innerHTML = `<p style="color:red;">Error fetching data: ${err}</p>`;
             }
             }
     </script>
 </body>
 </html>
+
 
