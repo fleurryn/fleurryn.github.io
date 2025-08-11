@@ -204,12 +204,17 @@
                 <input type="date" id="endDate">
             </div>
 
+            <div id="quotaField" style = "display:none;">
+                <label for="quotaInput">Quota:</label>
+                <input type="number" id="quotaInput" min="0" step="100000" placeholder="8,500,000">
+            </div>
+
             <!-- Sort Order -->
             <select id="orderInput">
                 <option value="none">Normal Order</option>
                 <option value="desc">Descending</option>
                 <option value="asc">Ascending</option>
-              </select>
+            </select>
               
             <button onclick="fetchData()">Get Data</button>
 
@@ -223,7 +228,7 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw83JYQftiwkv5vOYw9ynnOKFEeheoQ_U_86dRtV7Ntj6bMqNOqKd1Ua8aLzLu3LQAQHQ/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbym2DJRjr_BOfXV-OtzM_AEcOG2KjqRyX3PXdOsEC77sRg_gZ8c_oWUjn4t6VHq3I6a/exec";
 
         // Show/hide inputs based on query type
         document.getElementById("typeSelect").addEventListener("change", function () {
@@ -232,9 +237,12 @@
         const orderInput = document.getElementById("orderInput");
         const dateInput = document.getElementById("dateInput");
         const rangeInputs = document.getElementById("rangeInputs");
+        const quotaField = document.getElementById("quotaField");
 
         // username needed for single-player or player-range queries
         usernameInput.style.display = (type === "player") ? "block" : "none";
+
+        quotaField.style.display = (type === "quota_gains_table") ? "block" : "none";
 
         // order/select shown for sort, player_range, and daily_gains_table
         orderInput.style.display = (type === "quota_gains_table" || type === "player_range" || type === "daily_gains_table") ? "block" : "none";
@@ -316,9 +324,13 @@
                 url += `&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
             }
 
-            // Sort-specific param
+            // Sort-specific param and quota for quota_gains_table
             if (type === "quota_gains_table" || type === "player_range" || type === "daily_gains_table") {
                 url += `&order=${encodeURIComponent(order)}`;
+            }
+            if (type === "quota_gains_table") {
+                const quotaValue = document.getElementById("quotaInput").value || 8500000;
+                url += `&quota=${encodeURIComponent(quotaValue)}`;
             }
 
             // Fetch and render (same as before)
