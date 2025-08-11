@@ -122,7 +122,7 @@
             </div>
 
             <!-- Sort Order -->
-            <select id="orderInput" style="display:none;">
+            <select id="orderInput">
                 <option value="asc">Ascending</option>
                 <option value="desc">Descending</option>
             </select>
@@ -133,7 +133,7 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzi1CBX4lB35bWPwzoarynMThoetQ1xKVAfW3cD9znOeFFXfWwkos3fPY8TJQmVim8fOg/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxvYiO4bo_HtdwwXr8dIj_Ulz4Gg1QgtHG0hNMySXlKqqdWps-pE4PN7bEJ_f3WSaDJ3Q/exec";
 
         // Show/hide inputs based on query type
         document.getElementById("typeSelect").addEventListener("change", function () {
@@ -146,8 +146,8 @@
         // username needed for single-player or player-range queries
         usernameInput.style.display = (type === "player") ? "block" : "none";
 
-        // order/select shown only for sort
-        orderInput.style.display = (type === "sort") ? "block" : "none";
+        // order/select shown for sort, player_range, and daily_gains_table
+        orderInput.style.display = (type === "sort" || type === "player_range" || type === "daily_gains_table") ? "block" : "none";
 
         // show single-date for single-day queries
         if (type === "player" || type === "total_day") {
@@ -270,3 +270,4 @@
     </script>
 </body>
 </html>
+
