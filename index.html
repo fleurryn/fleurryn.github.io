@@ -225,10 +225,26 @@
             
             <div id="changesContainer"></div>
         </div>
+
+        <div class="section">
+            <h2>Club Comparison</h2>
+            <label>Uma Rooma Total Fans:</label>
+            <input type="number" id="myClubFans" placeholder="Enter total fans">
+          
+            <label>Other Club Total Fans:</label>
+            <input type="number" id="otherClubFans" placeholder="Enter total fans">
+          
+            <button onclick="compareClubs()">Compare</button>
+            <p id="comparisonResult"></p>
+          
+            <button onclick="loadClubComparisonHistory()">Show Past Records</button>
+            <div id="clubComparisonTable"></div>
+          </div>
+          
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbym2DJRjr_BOfXV-OtzM_AEcOG2KjqRyX3PXdOsEC77sRg_gZ8c_oWUjn4t6VHq3I6a/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby_3D2xKv6yUhGAoH_82CtcWV3SVn9KJHyd1b8pXv0QU6sa2AMRYpohWZIHbqA1WZ56nQ/exec";
 
         // Show/hide inputs based on query type
         document.getElementById("typeSelect").addEventListener("change", function () {
@@ -409,6 +425,52 @@
                 document.getElementById("changesContainer").innerHTML = `<p style="color:red;">Error fetching data: ${err}</p>`;
             }
             }
+
+            async function compareClubs() {
+                const myClub = document.getElementById("myClubFans").value;
+                const otherClub = document.getElementById("otherClubFans").value;
+                if (!myClub || !otherClub) {
+                    alert("Please enter both club values.");
+                    return;
+                }
+
+                const url = `${WEB_APP_URL}?type=club_comparison&myClub=${encodeURIComponent(myClub)}&otherClub=${encodeURIComponent(otherClub)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.status === "success") {
+                    document.getElementById("comparisonResult").innerHTML =
+                    `<strong>Uma Rooma Value:</strong> ${data.data.myValue.toFixed(2)}<br>
+                    <strong>Other Club's Value:</strong> ${data.data.otherValue.toFixed(2)}<br>
+                    <strong>Difference:</strong> ${data.data.difference.toFixed(2)}`;
+                } else {
+                    document.getElementById("comparisonResult").innerText = "Error: " + data.message;
+                }
+                }
+
+                async function loadClubComparisonHistory() {
+                const url = `${WEB_APP_URL}?type=club_comparison_history`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.status !== "success" || !data.data.length) {
+                    document.getElementById("clubComparisonTable").innerHTML = "<p>No records found.</p>";
+                    return;
+                }
+
+                let html = "<table class='my-table'><tr><th>Date</th><th>My Value</th><th>Other Value</th><th>Difference</th></tr>";
+                data.data.forEach(row => {
+                    html += `<tr>
+                            <td>${new Date(row[0]).toLocaleDateString()}</td>
+                            <td>${row[1].toFixed(2)}</td>
+                            <td>${row[2].toFixed(2)}</td>
+                            <td>${row[3].toFixed(2)}</td>
+                            </tr>`;
+                });
+                html += "</table>";
+                document.getElementById("clubComparisonTable").innerHTML = html;
+                }
+
     </script>
 </body>
 </html>
