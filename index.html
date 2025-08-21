@@ -327,6 +327,126 @@
             }
         }
 
+        async function fetchData() {
+            const spinner = document.getElementById("loadingSpinner");
+            const container = document.getElementById("changesContainer");
+
+            // Show spinner, clear old table
+            spinner.style.display = "block";
+            container.innerHTML = "";
+
+            const type = document.getElementById("typeSelect").value;
+            const username = document.getElementById("usernameInput").value.trim();
+            const date = document.getElementById("dateInput").value;
+            const startDate = document.getElementById("startDate").value;
+            const endDate = document.getElementById("endDate").value;
+            const order = document.getElementById("orderInput").value;
+
+            let url = `${WEB_APP_URL}?type=${encodeURIComponent(type)}`;
+
+            // Add username if present / required
+            if (type === "player" && username) {
+                url += `&username=${encodeURIComponent(username)}`;
+            }
+
+            // Single-day queries
+            if (type === "player" || type === "total_day") {
+                if (!date) { alert("Please select a date."); return; }
+                url += `&date=${encodeURIComponent(date)}`;
+            }
+
+            // Range queries (also used by sort)
+            if (type === "player_range" || type === "total_range" || type === "quota_gains_table" || type === "daily_gains_table") {
+                if (!startDate || !endDate) { alert("Please select both start and end dates."); return; }
+                url += `&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
+            }
+
+            // Sort-specific param and quota for quota_gains_table
+            if (type === "quota_gains_table" || type === "player_range" || type === "daily_gains_table") {
+                url += `&order=${encodeURIComponent(order)}`;
+            }
+            if (type === "quota_gains_table") {
+                const quotaValue = document.getElementById("quotaInput").value || 8500000;
+                url += `&quota=${encodeURIComponent(quotaValue)}`;
+            }
+
+            // Fetch and render (same as before)
+            try {
+                const response = await fetch(url);
+                const result = await response.json();
+
+                spinner.style.display = "none";
+
+                const container = document.getElementById("changesContainer");
+                container.innerHTML = "";
+
+
+                if (result.status !== "success") {
+                    container.innerHTML = `<p style="color:red;">Error: ${result.message}</p>`;
+                    return;
+                }
+
+                const tableData = result.data;
+                if (!tableData || tableData.length === 0) {
+                    container.innerHTML = "<p>No data found.</p>";
+                    return;
+                }
+
+                // Create table and header
+                const table = document.createElement("table");
+                table.classList.add("my-table"); // for CSS styling
+                const headers = ["#", ...tableData[0]]; // Add serial number column
+                const headerRow = document.createElement("tr");
+
+                headers.forEach(header => {
+                    const th = document.createElement("th");
+                    th.textContent = header;
+                    headerRow.appendChild(th);
+                });
+                table.appendChild(headerRow);
+
+                // Create table rows with serial numbers
+                for (let i = 1; i < tableData.length; i++) {
+                    const tr = document.createElement("tr");
+
+                    // Serial number cell
+                    const snTd = document.createElement("td");
+                    snTd.textContent = i; // starts from 1
+                    tr.appendChild(snTd);
+
+                    let row = tableData[i];
+
+                    if (!Array.isArray(row)) {
+                        row = headers.slice(1).map(h => row[h]); // skip SN column in mapping
+                    }
+
+                    row.forEach((cell, idx) => {
+                        const td = document.createElement("td");
+                        td.textContent = typeof cell === "number" ? cell.toLocaleString() : cell;
+
+                        // Color Quota Met? column for quota_gains_table
+                        if (type === "quota_gains_table" && idx === row.length - 1 && i < tableData.length - 1) {
+                            td.style.color = cell === "✅" ? "green" : "red";
+                            td.style.fontWeight = "bold";
+                        }
+
+                        tr.appendChild(td);
+                    });
+
+                    table.appendChild(tr);
+                }
+
+                const tableWrapper = document.createElement("div");
+                tableWrapper.className = "table-wrapper";
+                tableWrapper.appendChild(table);
+                container.appendChild(tableWrapper);
+
+            } catch (err) {
+                spinner.style.display = "none";
+                document.getElementById("changesContainer").innerHTML = `<p style="color:red;">Error fetching data: ${err}</p>`;
+            }
+        }
+
         async function compareClubs() {
             const myClub = document.getElementById("myClubFans").value;
             const otherClub = document.getElementById("otherClubFans").value;
@@ -390,7 +510,6 @@
                 tableContainer.innerHTML = `<p style="color:red;">Error: ${err}</p>`;
             }
         }
-
     </script>
 </body>
 
